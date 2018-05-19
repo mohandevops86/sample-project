@@ -1,0 +1,26 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE struts PUBLIC
+    "-//Apache Software Foundation//DTD Struts Configuration 2.0//EN"
+    "http://struts.apache.org/dtds/struts-2.0.dtd">
+<struts>
+	<constant name="struts.devMode" value="false" />
+	<constant name="struts.action.excludePattern" value=".*/static/.*" />
+	<package name="test" extends="struts-default">
+
+		<action name="authenticate" class="com.ssss.ttr.action.LoginController"
+			method="login">
+			<result name="success" type="redirectAction">report</result>
+			<result name="login">/login.jsp</result>
+			<result name="error">/error.jsp</result>
+		</action>
+		<action name="report" class="com.ssss.ttr.action.TimeDataController"
+			method="getReport">
+			<result name="success">/report.jsp</result>
+		</action>
+		<action name="logout" class="com.ssss.ttr.action.LoginController"
+			method="logout">
+			<result name="success">/login.jsp</result>
+		</action>
+
+	</package>
+</struts>

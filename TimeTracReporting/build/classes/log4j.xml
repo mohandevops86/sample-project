@@ -1,0 +1,17 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<!DOCTYPE log4j:configuration SYSTEM "log4j.dtd">
+<log4j:configuration xmlns:log4j="http://jakarta.apache.org/log4j/">
+	<appender name="AppLogAppender" class="org.apache.log4j.DailyRollingFileAppender">
+		<param name="DatePattern" value="'.'yyyy-MM-dd" />
+		<param name="File" value="${jboss.server.log.dir}/TimeTracReporting.log" />
+		<param name="MaxFileSize" value="3MB" />
+		<param name="MaxBackupIndex" value="2" />
+		<layout class="org.apache.log4j.PatternLayout">
+			<param name="ConversionPattern" value="%d [%t] %-5p %C{1} - %m%n" />
+		</layout>
+	</appender>
+	<root>
+		<priority value="INFO" />
+		<appender-ref ref="AppLogAppender" />
+	</root>
+</log4j:configuration>

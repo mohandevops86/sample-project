@@ -1,0 +1,350 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<project name="TimeTracReporting" default="deploy-LOCAL" basedir=".">
+	<description>
+		TimeTracReporting ant targets
+    </description>
+
+	<property file="build.properties" />
+	<property name="src.dir" value="src"/>	
+	<property name="target.env" value="${deploy_target}"/>
+	
+	<property name="MailLogger.mailhost"         value="${mailLogger.mailhost}"/>
+	<property name="MailLogger.port"             value="${mailLogger.port}"/>
+	<property name="MailLogger.from"             value="${mailLogger.from}"/>
+	<property name="MailLogger.success.to"       value="${mailLogger.success.to}"/>	
+
+	<condition property="is_external">
+    	<equals arg1="${is_external}" arg2="true" />
+	</condition>	
+	
+	<condition property="MailLogger.success.subject" value="${mailLogger.success.subject}-${deploy_target} - [copy war file manually to External DMZ server]" else="${mailLogger.success.subject}-${deploy_target}">
+	    <equals arg1="${is_external}" arg2="true" />
+    </condition>
+	
+	<property name="MailLogger.failure.to"       value="${mailLogger.failure.to}"/>
+	<property name="MailLogger.failure.subject"  value="${mailLogger.failure.subject}-${deploy_target}"/>
+
+	<tstamp>
+	      <format property="BUILD_DATE_TIME" pattern="yyyyMMdd-HHmmss"  locale="en,US" />
+    </tstamp>
+	
+	<path id="compile.classpath">
+		<fileset dir="${web.lib.dir}">
+			<include name="*.jar" />
+		</fileset>
+	</path>
+		
+	<echo message="Starting ant tasks... "/>
+	
+	<!-- ................................. 
+          target: war              
+         ................................. -->
+
+	<target name="war" depends="compile">
+		<copy todir="${build.classes.dir}">
+		  <fileset dir="${src.dir}">
+		  	<exclude name="**/CONFIG_DIR/**" />
+		    <include name="**/*.xml"/>
+		  	<include name="**/*.*.xml"/>
+		    <include name="**/*.properties"/>		  	
+		  </fileset>
+		</copy>		
+		<war destfile="${dist.dir}/${project.name}.war" webxml="${web.dir}/WEB-INF/web.xml">
+			<fileset dir="${web.dir}">				
+				<exclude name="**/*.jar" />
+			</fileset>
+			<lib dir="${web.lib.dir}" />			
+			<classes dir="${build.classes.dir}" />			
+		</war>		
+	</target>
+
+	<!-- ................................. 
+          target: first-time-deploy-msg              
+         ................................. -->
+
+	<target name="first-time-deploy-msg" unless="warispresent">
+		<echo message="***************Seems like first time deployment as there is no existing project deployment on server.***************"/>
+    </target>	
+	
+	<!-- ................................. 
+          target: init              
+         ................................. -->	
+
+	<target name="init" depends="clean">
+		<mkdir dir="${build.classes.dir}" />
+		<mkdir dir="${dist.dir}" />
+	</target>
+
+	<!-- ................................. 
+          target: compile              
+         ................................. -->	
+	
+	<target name="compile" depends="init">
+		<javac destdir="${build.classes.dir}" debug="true" srcdir="src" includeantruntime="false">
+			<classpath refid="compile.classpath" />
+		</javac>
+	</target>
+
+	<!-- ................................. 
+          target: clean              
+         ................................. -->	
+	
+	<target name="clean">
+		<delete dir="${dist.dir}" />
+		<delete dir="${build.classes.dir}" />
+	</target>
+	
+	<target name="email_last_deploy_log">
+		<mail
+	    	from="${deploy.from.notification}"
+	    	to="deploy.to.notification"
+	    	subject="deploy.subject"
+	    	message="deploy.subject"
+	    	files="${deploy.log.dir}/${project.name}_log_${BUILD_DATE_TIME}.log"
+		/>
+	</target>
+	<!-- ********************************************* LOCAL BEGIN ********************************************* !--> 	
+	<!-- ................................. 
+          target:  userLOCALconfig              
+         ................................. -->	
+	
+	<target name="useLOCALconfig" depends=""
+	        description="use LOCAL config settings for deploy">
+	    <delete file="${application.config.file}" quiet="true"/>
+	    <copy file="${LOCAL-application.config.file}"
+	             tofile="${application.config.file}">
+	    </copy>
+		 <delete file="${jboss.web.file}" quiet="true"/>
+		
+	</target>
+
+	<!-- ................................. 
+          target: local-war-file-check              
+         ................................. -->
+
+ 	<target name="local-war-file-check">
+	   <available file="${local.server.deploy.dir}/${project.name}.war" property="warispresent"/>	   
+	</target>
+
+	<!-- ................................. 
+          target: local-war-bakup              
+         ................................. -->
+	
+	<target name="bakup-LOCAL-war" depends="local-war-file-check, first-time-deploy-msg" description="Bakup local war file" if="warispresent">
+		<mkdir dir="${local.server.deploy.bakup.dir}"/>	
+		<copy file="${local.server.deploy.dir}/${project.name}.war" tofile="${local.server.deploy.bakup.dir}/${project.name}_${BUILD_DATE_TIME}.war"/>
+	</target>
+	
+	<!-- ................................. 
+          target: local-war              
+         ................................. -->
+
+	<target name="local-war" depends="useLOCALconfig, bakup-LOCAL-war, war">		
+	</target>
+
+	
+	<!-- ================================= 
+          target: local deploy              
+         ================================= -->	
+
+    <target name="deploy-LOCAL" depends="local-war" description="Deploys the WAR">    	
+        <delete>
+            <fileset dir="${local.server.deploy.dir}">
+              <include name="${project.name}.*"/>              
+            </fileset>
+        </delete>    	
+        <copy file="${dist.dir}/${project.name}.war" todir="${local.server.deploy.dir}" overwrite="true"/>    	
+        <echo message="${app.name} sucessfully deployed (LOCALY) to ${local.server.deploy.dir}"/>    	
+    </target>
+
+	<!-- ********************************************* LOCAL END ********************************************* !-->
+	
+	<!-- ********************************************* DV BEGIN ********************************************* !--> 	
+	<!-- ................................. 
+          target: useDVconfig
+         ................................. -->	
+	
+	<target name="useDVconfig" depends=""
+		description="use DV config settings for deploy">
+	    <delete file="${application.config.file}" quiet="true"/>
+	    <copy file="${DV-application.config.file}"
+	             tofile="${application.config.file}">
+	    </copy>
+		<delete file="${jboss.web.file}" quiet="true"/>
+		<copy file="${DV-jboss.web.file}"
+		    tofile="${jboss.web.file}">
+		</copy>
+		 
+	</target>
+
+	<!-- ................................. 
+          target: DV-war-file-check              
+         ................................. -->
+
+ 	<target name="DV-war-file-check"> 		
+ 	   <echo message="Checking if has any previous deployment as ${remote.dv.server.deploy.dir}/${project.name}.war"/>
+	   <available file="${remote.dv.server.deploy.dir}/${project.name}.war" property="warispresent"/>	   
+	</target>
+
+	<!-- ................................. 
+          target: backup-DV-war              
+         ................................. -->
+	
+	<target name="bakup-DV-war" depends="DV-war-file-check, first-time-deploy-msg" description="Bakup local war file" if="warispresent">
+		
+		<echo message="bakup existing deployed file ${remote.dv.server.deploy.dir}/${project.name}.war"/>
+		<echo message="to bakup dir: ${remote.dv.server.deploy.bakup.dir}"/>
+		<echo message="as ${remote.dv.server.deploy.bakup.dir}/${project.name}_${BUILD_DATE_TIME}.war"/>       		
+		<mkdir dir="${remote.dv.server.deploy.bakup.dir}"/>	
+		<copy file="${remote.dv.server.deploy.dir}/${project.name}.war" tofile="${remote.dv.server.deploy.bakup.dir}/${project.name}_${BUILD_DATE_TIME}.war"/>
+	</target>
+	
+	<!-- ................................. 
+          target: remote-DV-war              
+         ................................. -->
+
+	<target name="remote-DV-war" depends="useDVconfig, bakup-DV-war, war">		
+	</target>
+
+	<!-- ................................. 
+          target: deploy-DV              
+         ................................. -->	
+
+    <target name="deploy-DV" depends="remote-DV-war" description="Deploys the WAR">    	
+        <delete>
+            <fileset dir="${remote.dv.server.deploy.dir}">
+              <include name="${project.name}.*"/>              
+            </fileset>
+        </delete>     	
+        <copy file="${dist.dir}/${project.name}.war" todir="${remote.dv.server.deploy.dir}"/>    	
+        <echo message="${app.name} sucessfully deployed (REMOTE-DV) to ${remote.dv.server.deploy.dir}"/>
+    </target> 	
+	
+	<!-- ********************************************* DV END ********************************************* !-->
+	
+	<!-- ********************************************* PY BEGIN ********************************************* !--> 	
+	<!-- ................................. 
+          target: usePYconfig
+         ................................. -->	
+	
+	<target name="usePYconfig" depends=""
+		description="use PY config settings for deploy">
+	    <delete file="${application.config.file}" quiet="true"/>
+	    <copy file="${PY-application.config.file}"
+	             tofile="${application.config.file}">
+	    </copy>
+		<delete file="${jboss.web.file}" quiet="true"/>
+				<copy file="${PY-jboss.web.file}"
+				    tofile="${jboss.web.file}">
+				</copy>
+	</target>
+
+	<!-- ................................. 
+          target: PY-war-file-check              
+         ................................. -->
+
+ 	<target name="PY-war-file-check"> 		
+ 	   <echo message="Checking if has any previous deployment as ${remote.py.server.deploy.dir}/${project.name}.war"/>
+	   <available file="${remote.py.server.deploy.dir}/${project.name}.war" property="warispresent"/>	   
+	</target>
+
+	<!-- ................................. 
+          target: backup-PY-war              
+         ................................. -->
+	
+	<target name="bakup-PY-war" depends="PY-war-file-check, first-time-deploy-msg" description="Bakup local war file" if="warispresent">
+		
+		<echo message="bakup existing deployed file ${remote.py.server.deploy.dir}/${project.name}.war"/>
+		<echo message="to bakup dir: ${remote.py.server.deploy.bakup.dir}"/>
+		<echo message="as ${remote.py.server.deploy.bakup.dir}/${project.name}_${BUILD_DATE_TIME}.war"/>       		
+		<mkdir dir="${remote.py.server.deploy.bakup.dir}"/>	
+		<copy file="${remote.py.server.deploy.dir}/${project.name}.war" tofile="${remote.py.server.deploy.bakup.dir}/${project.name}_${BUILD_DATE_TIME}.war"/>
+	</target>
+	
+	<!-- ................................. 
+          target: remote-PY-war              
+         ................................. -->
+
+	<target name="remote-PY-war" depends="usePYconfig, bakup-PY-war, war">	
+	</target>
+
+	<!-- ................................. 
+          target: deploy-PY              
+         ................................. -->	
+
+    <target name="deploy-PY" depends="remote-PY-war" description="Deploys the WAR">    	
+        <delete>
+            <fileset dir="${remote.py.server.deploy.dir}">
+              <include name="${project.name}.*"/>              
+            </fileset>
+        </delete>     	
+        <copy file="${dist.dir}/${project.name}.war" todir="${remote.py.server.deploy.dir}"/>    	
+        <echo message="${app.name} sucessfully deployed (REMOTE-PY) to ${remote.py.server.deploy.dir}"/>
+    </target> 	
+	
+	<!-- ********************************************* PY END ********************************************* !-->
+	
+	<!-- ********************************************* PD BEGIN ********************************************* !--> 	
+	<!-- ................................. 
+          target: usePDconfig
+         ................................. -->	
+	
+	<target name="usePDconfig" depends=""
+		description="use PD config settings for deploy">
+	    <delete file="${application.config.file}" quiet="true"/>
+	    <copy file="${PD-application.config.file}"
+	             tofile="${application.config.file}">
+	    </copy>
+		<delete file="${jboss.web.file}" quiet="true"/>
+				<copy file="${PD-jboss.web.file}"
+				    tofile="${jboss.web.file}">
+				</copy>
+	</target>
+
+	<!-- ................................. 
+          target: PD-war-file-check              
+         ................................. -->
+
+ 	<target name="PD-war-file-check"> 		
+ 	   <echo message="Checking if has any previous deployment as ${remote.pd.server.deploy.dir}/${project.name}.war"/>
+	   <available file="${remote.pd.server.deploy.dir}/${project.name}.war" property="warispresent"/>	   
+	</target>
+
+	<!-- ................................. 
+          target: backup-PD-war              
+         ................................. -->
+	
+	<target name="bakup-PD-war" depends="PD-war-file-check, first-time-deploy-msg" description="Bakup local war file" if="warispresent">
+		
+		<echo message="bakup existing deployed file ${remote.pd.server.deploy.dir}/${project.name}.war"/>
+		<echo message="to bakup dir: ${remote.pd.server.deploy.bakup.dir}"/>
+		<echo message="as ${remote.pd.server.deploy.bakup.dir}/${project.name}_${BUILD_DATE_TIME}.war"/>       		
+		<mkdir dir="${remote.pd.server.deploy.bakup.dir}"/>	
+		<copy file="${remote.pd.server.deploy.dir}/${project.name}.war" tofile="${remote.pd.server.deploy.bakup.dir}/${project.name}_${BUILD_DATE_TIME}.war"/>
+	</target>
+	
+	<!-- ................................. 
+          target: remote-PD-war              
+         ................................. -->
+
+	<target name="remote-PD-war" depends="usePDconfig, bakup-PD-war, war">		
+	</target>
+
+	<!-- ................................. 
+          target: deploy-PD              
+         ................................. -->	
+
+    <target name="deploy-PD" depends="remote-PD-war" description="Deploys the WAR">    	
+        <delete>
+            <fileset dir="${remote.pd.server.deploy.dir}">
+              <include name="${project.name}.*"/>              
+            </fileset>
+        </delete>     	
+        <copy file="${dist.dir}/${project.name}.war" todir="${remote.pd.server.deploy.dir}"/>    	
+        <echo message="${app.name} sucessfully deployed (REMOTE-PD) to ${remote.pd.server.deploy.dir}"/>
+    </target> 	
+	
+	<!-- ********************************************* PD END ********************************************* !-->
+	
+
+</project>

@@ -1,0 +1,57 @@
+#
+app.name=TimeTracReporting
+#
+project.name=TimeTracReporting
+#
+deploy.from.notification=DONOTReplyJavaDeployment@ssss.com
+deploy.to.notification=webdev@ssss.com
+deploy.subject=${app.name} deployment log.
+deploy.log.dir=build-logs
+#
+web.dir=WebContent
+web.lib.dir=${web.dir}/WEB-INF/lib
+build.classes.dir=build/classes
+dist.dir=dist
+local.server.name=localhost
+# remote dev server
+remote.dv.server.name=txhdcwasdev01
+remote.py.server.name=txhdcwassb01
+remote.pd.server.name=txhdcwas01
+#
+LOCAL-application.config.file=./src/CONFIG_DIR/LOCAL-application-config.properties
+DV-application.config.file=./src/CONFIG_DIR/DV-application-config.properties
+PY-application.config.file=./src/CONFIG_DIR/PY-application-config.properties
+PD-application.config.file=./src/CONFIG_DIR/PD-application-config.properties
+application.config.file=./WebContent/WEB-INF/config/application-config.properties
+#
+LOCAL-jboss.web.file=./src/CONFIG_DIR/LOCAL-jboss-web.xml
+DV-jboss.web.file=./src/CONFIG_DIR/DV-jboss-web.xml
+PY-jboss.web.file=./src/CONFIG_DIR/PY-jboss-web.xml
+PD-jboss.web.file=./src/CONFIG_DIR/PD-jboss-web.xml
+jboss.web.file=./WebContent/WEB-INF/jboss-web.xml
+# local dev server
+local.server=C:/Jboss/jboss-eap-6.3.Alpha/standalone
+local.server.deploy.dir=${local.server}/deployments
+local.server.deploy.bakup.dir=${local.server}/deployment-bakups/${project.name}
+# remote dv server
+remote.dv.server=//${remote.dv.server.name}/c$/Jboss/jboss-eap-6.3.Alpha/standalone
+remote.dv.server.deploy.dir=${remote.dv.server}/deployments
+remote.dv.server.deploy.bakup.dir=${remote.dv.server}/deployment-bakups/${project.name}
+#
+# remote py server
+remote.py.server=//${remote.py.server.name}/c$/Jboss/jboss-eap-6.3.Alpha/standalone
+remote.py.server.deploy.dir=${remote.py.server}/deployments
+remote.py.server.deploy.bakup.dir=${remote.py.server}/deployment-bakups/${project.name}
+#
+# remote pd server
+remote.pd.server=//${remote.pd.server.name}/c$/Jboss/jboss-eap-6.3.Alpha/standalone
+remote.pd.server.deploy.dir=${remote.pd.server}/deployments
+remote.pd.server.deploy.bakup.dir=${remote.pd.server}/deployment-bakups/${project.name}
+#
+mailLogger.mailhost=smtp.ssss.com
+mailLogger.port=25
+mailLogger.from=java-build.no.reply@ssss.com
+mailLogger.success.to=s.ramachandrarao@ssss.com
+mailLogger.success.subject=${project.name} - Build Finished Successfully
+mailLogger.failure.to=s.ramachandrarao@ssss.com
+mailLogger.failure.subject=${project.name} - Build Failed.
